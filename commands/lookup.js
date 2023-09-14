@@ -21,7 +21,7 @@ const findMostCommonColor = async (buffer) => {
 	return mostCommon.split(',').map(Number);
 };
 
-async function sendEmbed(battletag, data) {
+async function createSummaryEmbed(battletag, data) {
 	const tank_rank = data.competitive?.pc?.tank?.division
 		? capitalizeFirstLetter(data.competitive.pc.tank.division) + ' ' + data.competitive.pc.tank.tier
 		: 'Unranked';
@@ -91,7 +91,7 @@ module.exports = {
 		.setDescription('Looks up Overwatch stats for a user')
 		.addStringOption(option =>
 			option.setName('battletag')
-				.setDescription('The battletag of the user to look up')
+				.setDescription('The battletag of the user to look up. Case sensitive.')
 				.setRequired(true)),
 	async execute(interaction) {
 		await interaction.deferReply();
@@ -107,7 +107,7 @@ module.exports = {
 			switch (response.status) {
 			case 200:
 				console.log(`Success: ${response.status}`);
-				interaction.editReply(await sendEmbed(battletag, data));
+				interaction.editReply(await createSummaryEmbed(battletag, data));
 				console.log('Embed sent.');
 				break;
 			case 404:
