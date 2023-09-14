@@ -3,10 +3,12 @@ const { OverwatchAccounts } = require('../db.js');
 const fetch = require('node-fetch');
 const { EmbedBuilder } = require('@discordjs/builders');
 const { PNG } = require ('pngjs');
+const { getSummary } = require ('../owapi');
 
 function capitalizeFirstLetter(str) {
 	return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
 
 const findMostCommonColor = async (buffer) => {
 	const colorMap = {};
@@ -19,10 +21,68 @@ const findMostCommonColor = async (buffer) => {
 	return mostCommon.split(',').map(Number);
 };
 
-function intToHex(c) {
-	const hex = c.toString(16);
-	return hex.length == 1 ? '0' + hex : hex;
+async function sendEmbed(battletag, data) {
+	const tank_rank = data.competitive?.pc?.tank?.division
+		? capitalizeFirstLetter(data.competitive.pc.tank.division) + ' ' + data.competitive.pc.tank.tier
+		: 'Unranked';
+
+	const damage_rank = data.competitive?.pc?.damage?.division
+		? capitalizeFirstLetter(data.competitive.pc.damage.division) + ' ' + data.competitive.pc.damage.tier
+		: 'Unranked';
+
+	const support_rank = data.competitive?.pc?.support?.division
+		? capitalizeFirstLetter(data.competitive.pc.support.division) + ' ' + data.competitive.pc.support.tier
+		: 'Unranked';
+
+
+	const iconMap = {
+		null: ':grey_question:',
+		'bronze': '<:Bronze:1151658779646099566>',
+		'silver': '<:Silver:1151658789720825926>',
+		'gold': '<:Gold:1151658799787159643>',
+		'platinum': '<:Platinum:1151658810763653221>',
+		'diamond': '<:Diamond:1151658820523786270>',
+		'master': '<:Master:1151658831072465046>',
+		'grandmaster': '<:Grandmaster:1151658843370176633>',
+	};
+
+	const tank_icon = iconMap[data.competitive?.pc?.tank?.division] || ':grey_question:';
+	const damage_icon = iconMap[data.competitive?.pc?.damage?.division] || ':grey_question:';
+	const support_icon = iconMap[data.competitive?.pc?.support?.division] || ':grey_question:';
+	const title = data.title ?? ' ';
+
+	const avatar = data.avatar;
+	let color;
+	try {
+		const response = await fetch(avatar);
+		if (!response.ok) {
+			console.log('Error retrieving img');
+		}
+		const imageBuffer = await response.buffer();
+		color = await findMostCommonColor(imageBuffer);
+	}
+	catch (error) {
+		console.log(`Error ${error}`);
+	}
+
+	const embed = new EmbedBuilder()
+		.setTitle(`${data.username}`)
+		.setColor(color)
+		.setDescription(`${title}`)
+		.setThumbnail(avatar)
+		.addFields(
+			{ name: 'Last placed: ', value: data.competitive?.pc?.season ? `Season ${data.competitive.pc.season}` : 'No Ranked Data' },
+			{ name: 'Tank <:Tank:1151658743298265212>', value: `${tank_icon} ${tank_rank}`, inline: true },
+			{ name: 'Damage <:Support:1151658769378459719>', value: `${damage_icon} ${damage_rank}`, inline: true },
+			{ name: 'Support <:Damage:1151658759018532984> ', value: `${support_icon} ${support_rank}`, inline: true },
+			{ name: 'Full Profile:', value: `[Link](https://playoverwatch.com/en-us/career/pc/${battletag})` },
+		);
+
+
+	return { embeds: [embed] };
+
 }
+
 
 module.exports = {
 	cooldown: 10,
@@ -36,74 +96,34 @@ module.exports = {
 	async execute(interaction) {
 		await interaction.deferReply();
 		const battletag = interaction.options.getString('battletag').replace('#', '-');
-		let statsData;
 		const player = await OverwatchAccounts.findOne({ where: { tag: battletag } });
 		console.log('Looking up', battletag + '...');
 		if (player) {
-			// empty
+			// TODO: Add to database
 		}
 		if (!player) {
 			// Make a html request to the overwatch api
-
-			try {
-				const response = await fetch(`https://overfast-api.tekrop.fr/players/${battletag}/summary`);
-				statsData = await response.json();
-
-			}
-			catch (error) {
-				console.log('Error:', error);
+			const { data, response } = await getSummary(battletag);
+			switch (response.status) {
+			case 200:
+				console.log(`Success: ${response.status}`);
+				interaction.editReply(await sendEmbed(battletag, data));
+				console.log('Embed sent.');
+				break;
+			case 404:
+				console.log(`Failure: ${response.status}`);
+				interaction.editReply('Invalid battletag.');
+				break;
+			case 504:
+				console.log(`Failure: ${response.status}`);
+				interaction.editReply('Blizzard server error. Try again.');
+				break;
+			default:
+				console.log(`Failure: ${response.status}`);
+				interaction.editReply('I have no idea what\'s going on lmao');
+				break;
 			}
 		}
-
-		console.log(statsData);
-		const tank_rank = statsData.competitive?.pc?.tank?.division
-			? capitalizeFirstLetter(statsData.competitive.pc.tank.division) + ' ' + statsData.competitive.pc.tank.tier
-			: 'Unranked';
-
-		const damage_rank = statsData.competitive?.pc?.damage?.division
-			? capitalizeFirstLetter(statsData.competitive.pc.damage.division) + ' ' + statsData.competitive.pc.damage.tier
-			: 'Unranked';
-
-		const support_rank = statsData.competitive?.pc?.support?.division
-			? capitalizeFirstLetter(statsData.competitive.pc.support.division) + ' ' + statsData.competitive.pc.support.tier
-			: 'Unranked';
-
-        const title = statsData.title ?? ' ';
-
-		const avatar = statsData.avatar;
-		let color;
-		try {
-			const response = await fetch(avatar);
-			console.log(avatar);
-			console.log(response.headers.get('Content-Type'));
-			if (!response.ok) {
-				console.log('Error retrieving img');
-			}
-			const imageBuffer = await response.buffer();
-			color = await findMostCommonColor(imageBuffer);
-			console.log(`${color[0]},${color[1]},${color[2]}`);
-			console.log(intToHex(color[0]) + intToHex(color[1]) + intToHex(color[2]));
-		}
-		catch (error) {
-			console.log(`Error ${error}`);
-		}
-
-		const embed = new EmbedBuilder()
-			.setTitle(`${statsData.username}`)
-			.setColor(color)
-			.setDescription(`${title}`)
-			.setThumbnail(avatar)
-			.addFields(
-				{ name: 'Last placed: ', value: `Season ${statsData.competitive.pc.season}` },
-				{ name: 'Tank <:Tank:1151658743298265212>', value: `${tank_rank}`, inline: true },
-				{ name: 'Damage <:Support:1151658769378459719>', value: `${damage_rank}`, inline: true },
-				{ name: 'Support <:Damage:1151658759018532984> ', value: `${support_rank}`, inline: true },
-				{ name: 'Full Profile:', value: `[Link](https://playoverwatch.com/en-us/career/pc/${battletag})` },
-			);
-
-
-		await interaction.editReply({ embeds: [embed] });
-
 
 	},
 };
