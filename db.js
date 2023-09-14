@@ -13,20 +13,20 @@ const Players = sequelize.define('players', {
 		type: Sequelize.INTEGER,
 		primaryKey: true,
 		unique: true,
-	}
+	},
 });
 
 const OverwatchAccounts = sequelize.define('overwatch_accounts', {
-    tag : {
-        type: Sequelize.STRING,
-        primaryKey: true,
-        unique: true,
-    },
-    icon : Sequelize.STRING,
-    background : Sequelize.STRING,
-    tank_rank : Sequelize.STRING,
-    damage_rank : Sequelize.STRING,
-    support_rank : Sequelize.STRING,
+	tag : {
+		type: Sequelize.STRING,
+		primaryKey: true,
+		unique: true,
+	},
+	icon : Sequelize.STRING,
+	background : Sequelize.STRING,
+	tank_rank : Sequelize.STRING,
+	damage_rank : Sequelize.STRING,
+	support_rank : Sequelize.STRING,
 });
 
-module.exports = {Players, OverwatchAccounts};
+module.exports = { Players, OverwatchAccounts };
