@@ -17,12 +17,14 @@ const Players = sequelize.define('players', {
 });
 
 const OverwatchAccounts = sequelize.define('overwatch_accounts', {
-	tag : {
+	battletag : {
 		type: Sequelize.STRING,
 		primaryKey: true,
 		unique: true,
 	},
-	icon : Sequelize.STRING,
+	player_icon : Sequelize.STRING,
+	title : Sequelize.STRING,
+	latest_season : Sequelize.STRING,
 	background : Sequelize.STRING,
 	tank_rank : Sequelize.STRING,
 	damage_rank : Sequelize.STRING,
