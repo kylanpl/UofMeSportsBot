@@ -21,6 +21,28 @@ const findMostCommonColor = async (buffer) => {
 	return mostCommon.split(',').map(Number);
 };
 
+async function saveSummary(battletag, data) {
+	try {
+		// eslint-disable-next-line no-unused-vars
+		const Account = await OverwatchAccounts.create({
+			battletag: battletag,
+			player_icon: data.avatar,
+			title: data.title ?? 'None',
+			latest_season: data.competitive?.pc?.season ? data.competitive.pc.season : 'No Ranked Data',
+			background: data.namecard,
+			tank_rank: data.competitive?.pc?.tank?.division
+				? capitalizeFirstLetter(data.competitive.pc.tank.division) + ' ' + data.competitive.pc.tank.tier
+				: 'Unranked',
+			damage_rank: data.competitive?.pc?.damage?.division
+				? capitalizeFirstLetter(data.competitive.pc.damage.division) + ' ' + data.competitive.pc.damage.tier
+				: 'Unranked',
+			support_rank: data.competitive?.pc?.support?.division
+				? capitalizeFirstLetter(data.competitive.pc.support.division) + ' ' + data.competitive.pc.support.tier
+				: 'Unranked',
+		});
+	}
+	catch (error) { console.log(error); }
+}
 async function createSummaryEmbed(battletag, data) {
 	const tank_rank = data.competitive?.pc?.tank?.division
 		? capitalizeFirstLetter(data.competitive.pc.tank.division) + ' ' + data.competitive.pc.tank.tier
@@ -96,7 +118,7 @@ module.exports = {
 	async execute(interaction) {
 		await interaction.deferReply();
 		const battletag = interaction.options.getString('battletag').replace('#', '-');
-		const player = await OverwatchAccounts.findOne({ where: { tag: battletag } });
+		const player = await OverwatchAccounts.findOne({ where: { battletag: battletag } });
 		console.log('Looking up', battletag + '...');
 		if (player) {
 			// TODO: Add to database
@@ -108,6 +130,7 @@ module.exports = {
 			case 200:
 				console.log(`Success: ${response.status}`);
 				interaction.editReply(await createSummaryEmbed(battletag, data));
+				saveSummary(battletag, data);
 				console.log('Embed sent.');
 				break;
 			case 404:
@@ -124,7 +147,6 @@ module.exports = {
 				break;
 			}
 		}
-
 	},
 };
 
