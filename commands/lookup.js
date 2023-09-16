@@ -3,12 +3,23 @@ const { OverwatchAccounts } = require('../db.js');
 const fetch = require('node-fetch');
 const { EmbedBuilder } = require('@discordjs/builders');
 const { PNG } = require ('pngjs');
-const { getSummary } = require ('../owapi');
+const { getFullStats } = require ('../owapi');
+
 
 function capitalizeFirstLetter(str) {
 	return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function getStatsfromData(data) {
+	const PLAYER_ICON = data.summary.avatar ?? 'None';
+	const TITLE = data.summary.title ?? 'None';
+	const BACKGROUND = data.summary.namecard ?? 'None';
+	const LATEST_SEASON = data.summary.competitive.pc.season ?? 'No Ranked Data';
+	const TANK_RANK = data.summary.competitive.pc.tank.division && data.summary.competitive.pc.tank.tier ? [capitalizeFirstLetter(data.summary.competitive.pc.tank.division), data.summary.competitive.pc.tank.tier] : 'Unranked';
+	const DAMAGE_RANK = data.summary.competitive.pc.damage.division && data.summary.competitive.pc.damage.tier ? [capitalizeFirstLetter(data.summary.competitive.pc.damage.division), data.summary.competitive.pc.damage.tier] : 'Unranked';
+	const SUPPORT_RANK = data.summary.competitive.pc.support.division && data.summary.competitive.pc.support.tier ? [capitalizeFirstLetter(data.summary.competitive.pc.support.division), data.summary.competitive.pc.support.tier] : 'Unranked';
+	return { PLAYER_ICON, BACKGROUND, TITLE, LATEST_SEASON, TANK_RANK, DAMAGE_RANK, SUPPORT_RANK };
+}
 
 const findMostCommonColor = async (buffer) => {
 	const colorMap = {};
@@ -23,40 +34,19 @@ const findMostCommonColor = async (buffer) => {
 
 async function saveSummary(battletag, data) {
 	try {
+		const BATTLETAG = battletag;
+
+		console.log(`Saving ${BATTLETAG} to database...`);
 		// eslint-disable-next-line no-unused-vars
 		const Account = await OverwatchAccounts.create({
-			battletag: battletag,
-			player_icon: data.avatar,
-			title: data.title ?? 'None',
-			latest_season: data.competitive?.pc?.season ? data.competitive.pc.season : 'No Ranked Data',
-			background: data.namecard,
-			tank_rank: data.competitive?.pc?.tank?.division
-				? capitalizeFirstLetter(data.competitive.pc.tank.division) + ' ' + data.competitive.pc.tank.tier
-				: 'Unranked',
-			damage_rank: data.competitive?.pc?.damage?.division
-				? capitalizeFirstLetter(data.competitive.pc.damage.division) + ' ' + data.competitive.pc.damage.tier
-				: 'Unranked',
-			support_rank: data.competitive?.pc?.support?.division
-				? capitalizeFirstLetter(data.competitive.pc.support.division) + ' ' + data.competitive.pc.support.tier
-				: 'Unranked',
+			battletag: BATTLETAG,
+			data: data,
 		});
 	}
 	catch (error) { console.log(error); }
 }
-async function createSummaryEmbed(battletag, data) {
-	const tank_rank = data.competitive?.pc?.tank?.division
-		? capitalizeFirstLetter(data.competitive.pc.tank.division) + ' ' + data.competitive.pc.tank.tier
-		: 'Unranked';
-
-	const damage_rank = data.competitive?.pc?.damage?.division
-		? capitalizeFirstLetter(data.competitive.pc.damage.division) + ' ' + data.competitive.pc.damage.tier
-		: 'Unranked';
-
-	const support_rank = data.competitive?.pc?.support?.division
-		? capitalizeFirstLetter(data.competitive.pc.support.division) + ' ' + data.competitive.pc.support.tier
-		: 'Unranked';
-
-
+async function createSummaryEmbed(battletag, data, timestamp) {
+	const { PLAYER_ICON, TITLE, LATEST_SEASON, TANK_RANK, DAMAGE_RANK, SUPPORT_RANK } = getStatsfromData(data);
 	const iconMap = {
 		null: ':grey_question:',
 		'bronze': '<:Bronze:1151658779646099566>',
@@ -68,15 +58,13 @@ async function createSummaryEmbed(battletag, data) {
 		'grandmaster': '<:Grandmaster:1151658843370176633>',
 	};
 
-	const tank_icon = iconMap[data.competitive?.pc?.tank?.division] || ':grey_question:';
-	const damage_icon = iconMap[data.competitive?.pc?.damage?.division] || ':grey_question:';
-	const support_icon = iconMap[data.competitive?.pc?.support?.division] || ':grey_question:';
-	const title = data.title ?? ' ';
+	const tank_icon = iconMap[TANK_RANK[0].toLowerCase()] || ':grey_question:';
+	const damage_icon = iconMap[DAMAGE_RANK[0].toLowerCase()] || ':grey_question:';
+	const support_icon = iconMap[SUPPORT_RANK[0].toLowerCase()] || ':grey_question:';
 
-	const avatar = data.avatar;
 	let color;
 	try {
-		const response = await fetch(avatar);
+		const response = await fetch(PLAYER_ICON);
 		if (!response.ok) {
 			console.log('Error retrieving img');
 		}
@@ -87,20 +75,27 @@ async function createSummaryEmbed(battletag, data) {
 		console.log(`Error ${error}`);
 	}
 
+	console.log(LATEST_SEASON);
+	console.log(TANK_RANK);
+	console.log(DAMAGE_RANK);
+	console.log(SUPPORT_RANK);
+
+	const unix_timestamp = Math.round(timestamp / 1000);
+
 	const embed = new EmbedBuilder()
-		.setTitle(`${data.username}`)
+		.setTitle(`${data.summary.username}`)
 		.setColor(color)
-		.setDescription(`${title}`)
-		.setThumbnail(avatar)
+		.setDescription(`${TITLE}`)
+		.setThumbnail(PLAYER_ICON)
 		.addFields(
-			{ name: 'Last placed: ', value: data.competitive?.pc?.season ? `Season ${data.competitive.pc.season}` : 'No Ranked Data' },
-			{ name: 'Tank <:Tank:1151658743298265212>', value: `${tank_icon} ${tank_rank}`, inline: true },
-			{ name: 'Damage <:Support:1151658769378459719>', value: `${damage_icon} ${damage_rank}`, inline: true },
-			{ name: 'Support <:Damage:1151658759018532984> ', value: `${support_icon} ${support_rank}`, inline: true },
-			{ name: 'Full Profile:', value: `[Link](https://playoverwatch.com/en-us/career/pc/${battletag})` },
+			{ name: 'Last placed: ', value: `Season: ${LATEST_SEASON}` },
+			{ name: 'Tank <:Tank:1151658743298265212>', value: `${tank_icon} ${TANK_RANK[0]} ${TANK_RANK[1]}`, inline: true },
+			{ name: 'Damage <:Support:1151658769378459719>', value: `${damage_icon} ${DAMAGE_RANK[0]} ${DAMAGE_RANK[1]}`, inline: true },
+			{ name: 'Support <:Damage:1151658759018532984> ', value: `${support_icon} ${SUPPORT_RANK[0]} ${SUPPORT_RANK[1]}`, inline: true },
+			{ name: 'Top 3 Heroes', value: 'Test' },
+			{ name: 'Full Profile:', value: `[Link](https://playoverwatch.com/en-us/career/pc/${battletag})`, inline: true },
+			{ name: 'Last updated:', value: `<t:${unix_timestamp}:R>`, inlue: true },
 		);
-
-
 	return { embeds: [embed] };
 
 }
@@ -116,20 +111,62 @@ module.exports = {
 				.setDescription('The battletag of the user to look up. Case sensitive.')
 				.setRequired(true)),
 	async execute(interaction) {
+
+
 		await interaction.deferReply();
 		const battletag = interaction.options.getString('battletag').replace('#', '-');
-		const player = await OverwatchAccounts.findOne({ where: { battletag: battletag } });
-		console.log('Looking up', battletag + '...');
-		if (player) {
-			// TODO: Add to database
+		const latest_account = await OverwatchAccounts.findOne({ where: { battletag: battletag }, order: [['createdAt', 'DESC']] }) ?? null;
+
+		if (latest_account) {
+			// Get current time
+			const now = new Date();
+			// Get time of last update
+			const last_update = new Date(latest_account.createdAt);
+			// Check if last update was within one hour
+			const diff = Math.abs(now - last_update);
+			const minutes = Math.floor((diff / 1000) / 60);
+			if (minutes < 30) {
+				console.log('Found in database, sending embed...');
+				interaction.editReply(await createSummaryEmbed(battletag, latest_account.data, last_update));
+				return;
+			}
+			else {
+				console.log('Looking up', battletag + '...');
+				// if (player)
+				// Make a html request to the overwatch api
+				const { data, response } = await getFullStats(battletag);
+				switch (response.status) {
+				case 200:
+					console.log(`Success: ${response.status}`);
+					interaction.editReply(await createSummaryEmbed(battletag, data, now));
+					saveSummary(battletag, data);
+					console.log('Embed sent.');
+					break;
+				case 404:
+					console.log(`Failure: ${response.status}`);
+					interaction.editReply('Invalid battletag.');
+					break;
+				case 504:
+					console.log(`Failure: ${response.status}`);
+					interaction.editReply('Blizzard server error. Try again.');
+					break;
+				default:
+					console.log(`Failure: ${response.status}`);
+					interaction.editReply('I have no idea what\'s going on lmao');
+					break;
+				}
+			}
 		}
-		if (!player) {
+		else {
+			console.log('Looking up', battletag + '...');
+			const now = new Date();
+			// if (player)
 			// Make a html request to the overwatch api
-			const { data, response } = await getSummary(battletag);
+			const { data, response } = await getFullStats(battletag);
 			switch (response.status) {
 			case 200:
 				console.log(`Success: ${response.status}`);
-				interaction.editReply(await createSummaryEmbed(battletag, data));
+				interaction.editReply(await createSummaryEmbed(battletag, data, now));
 				saveSummary(battletag, data);
 				console.log('Embed sent.');
 				break;
@@ -147,6 +184,7 @@ module.exports = {
 				break;
 			}
 		}
+
 	},
 };
 
