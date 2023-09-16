@@ -2,8 +2,8 @@
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
+const { OverwatchAccounts } = require('./db.js');
 require('dotenv').config();
-const { Players } = require('./db.js');
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -29,8 +29,9 @@ for (const file of commandFiles) {
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, c => {
-	Players.sync();
+	OverwatchAccounts.sync();
 	console.log(`Ready! Logged in as ${c.user.tag}`);
+
 });
 
 
