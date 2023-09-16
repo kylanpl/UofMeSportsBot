@@ -17,18 +17,13 @@ const Players = sequelize.define('players', {
 });
 
 const OverwatchAccounts = sequelize.define('overwatch_accounts', {
-	battletag : {
-		type: Sequelize.STRING,
+	id : {
+		type: Sequelize.INTEGER,
 		primaryKey: true,
-		unique: true,
+		autoincrement: true,
 	},
-	player_icon : Sequelize.STRING,
-	title : Sequelize.STRING,
-	latest_season : Sequelize.STRING,
-	background : Sequelize.STRING,
-	tank_rank : Sequelize.STRING,
-	damage_rank : Sequelize.STRING,
-	support_rank : Sequelize.STRING,
+	battletag : Sequelize.STRING,
+	data: Sequelize.JSON,
 });
 
 module.exports = { Players, OverwatchAccounts };
