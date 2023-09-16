@@ -13,7 +13,19 @@ async function getSummary(battletag) {
 
 }
 
+async function getFullStats(battletag) {
+	try {
+		const response = await fetch(`https://overfast-api.tekrop.fr/players/${battletag}`);
+		const data = await response.json();
+		return { data, response };
+	}
+	catch (error) {
+		console.log(`Error: ${error}`);
+	}
+}
+
 
 module.exports = {
 	getSummary,
+	getFullStats,
 };
