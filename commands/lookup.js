@@ -22,13 +22,15 @@ function getStatsfromData(data) {
 
 	// Top 3 Heroes
 	let heroes = [];
-	for (const entry of data.stats.pc.quickplay.heroes_comparisons.time_played.values) {
-		heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
+	for (const platform of ['pc', 'console']) {
+		for (const mode of ['quickplay', 'competitive']) {
+			for (const entry of data.stats?.[platform]?.[mode]?.heroes_comparisons?.time_played?.values ?? []) {
+				heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
+			}
+		}
 	}
+	console.log(heroes);
 
-	for (const entry of data.stats.pc.competitive.heroes_comparisons.time_played.values) {
-		heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
-	}
 
 	// Get the top 3
 	heroes = Object.entries(heroes).sort((a, b) => b[1] - a[1]).slice(0, 3);
