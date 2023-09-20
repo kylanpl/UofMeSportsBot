@@ -19,7 +19,27 @@ function getStatsfromData(data) {
 	const TANK_RANK = data.summary?.competitive?.pc?.tank?.division && data.summary?.competitive?.pc.tank?.tier ? [capitalizeFirstLetter(data.summary.competitive.pc.tank.division), data.summary.competitive.pc.tank.tier] : ['Unranked', ''];
 	const DAMAGE_RANK = data.summary?.competitive?.pc?.damage?.division && data.summary.competitive?.pc.damage?.tier ? [capitalizeFirstLetter(data.summary.competitive.pc.damage.division), data.summary.competitive.pc.damage.tier] : ['Unranked', ''];
 	const SUPPORT_RANK = data.summary?.competitive?.pc?.support?.division && data.summary.competitive?.pc.support.tier ? [capitalizeFirstLetter(data.summary.competitive.pc.support.division), data.summary.competitive.pc.support.tier] : ['Unranked', ''];
-	return { PLAYER_ICON, BACKGROUND, TITLE, LATEST_SEASON, TANK_RANK, DAMAGE_RANK, SUPPORT_RANK, PRIVACY };
+
+	// Top 3 Heroes
+	let heroes = [];
+	for (const entry of data.stats.pc.quickplay.heroes_comparisons.time_played.values) {
+		heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
+	}
+
+	for (const entry of data.stats.pc.competitive.heroes_comparisons.time_played.values) {
+		heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
+	}
+
+	// Get the top 3
+	heroes = Object.entries(heroes).sort((a, b) => b[1] - a[1]).slice(0, 3);
+	// Reformat into a string
+	let top_heroes_string = '';
+	heroes.forEach((hero) => {
+		top_heroes_string += `${capitalizeFirstLetter(hero[0])}, `;
+	});
+	const TOP_HEROES = top_heroes_string.slice(0, -2);
+
+	return { PLAYER_ICON, BACKGROUND, TITLE, LATEST_SEASON, TANK_RANK, DAMAGE_RANK, SUPPORT_RANK, PRIVACY, TOP_HEROES };
 }
 
 const findMostCommonColor = async (buffer) => {
@@ -47,30 +67,8 @@ async function saveSummary(battletag, data) {
 	catch (error) { console.log(error); }
 }
 async function createSummaryEmbed(battletag, data, timestamp) {
-	const { PLAYER_ICON, TITLE, LATEST_SEASON, TANK_RANK, DAMAGE_RANK, SUPPORT_RANK, PRIVACY } = getStatsfromData(data);
+	const { PLAYER_ICON, TITLE, LATEST_SEASON, TANK_RANK, DAMAGE_RANK, SUPPORT_RANK, PRIVACY, TOP_HEROES } = getStatsfromData(data);
 
-	// Top 3 Heroes
-	const heroes = [];
-	for (const entry of data.stats.pc.quickplay.heroes_comparisons.time_played.values) {
-		heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
-	}
-
-	for (const entry of data.stats.pc.competitive.heroes_comparisons.time_played.values) {
-		heroes[entry.hero] ? heroes[entry.hero] += entry.value : heroes[entry.hero] = entry.value;
-	}
-
-	console.log(heroes);
-	// Get the top 3
-	const top_heroes = Object.entries(heroes).sort((a, b) => b[1] - a[1]).slice(0, 3);
-	// Reformat into a string
-	let top_heroes_string = '';
-
-	top_heroes.forEach((hero) => {
-		top_heroes_string += `${capitalizeFirstLetter(hero[0])}, `;
-	});
-	top_heroes_string = top_heroes_string.slice(0, -2);
-
-	console.log(top_heroes);
 
 	// Tier Icons
 	const iconMap = {
@@ -115,8 +113,8 @@ async function createSummaryEmbed(battletag, data, timestamp) {
 				{ name: 'Tank <:Tank:1151658743298265212>', value: `${tank_icon} ${TANK_RANK[0]} ${TANK_RANK[1]}`, inline: true },
 				{ name: 'Damage <:Support:1151658769378459719>', value: `${damage_icon} ${DAMAGE_RANK[0]} ${DAMAGE_RANK[1]}`, inline: true },
 				{ name: 'Support <:Damage:1151658759018532984> ', value: `${support_icon} ${SUPPORT_RANK[0]} ${SUPPORT_RANK[1]}`, inline: true },
-				{ name: 'Top 3 Heroes', value: top_heroes_string, inline: true },
-				{ name: 'Full Profile:', value: `[Link](https://playoverwatch.com/en-us/career/pc/${battletag})`, inline: true },
+				{ name: 'Top 3 Heroes', value: TOP_HEROES, inline: true },
+				// { name: 'Full Profile:', value: `[Link](https://playoverwatch.com/en-us/career/pc/${battletag})`, inline: true },
 				{ name: 'Last updated:', value: `<t:${unix_timestamp}:R>`, inlue: true },
 			);
 	}
