@@ -26,4 +26,14 @@ const OverwatchAccounts = sequelize.define('overwatch_accounts', {
 	data: Sequelize.JSON,
 });
 
-module.exports = { Players, OverwatchAccounts };
+const Counter = sequelize.define('Counter', {
+	id : {
+		type: Sequelize.INTEGER,
+		primaryKey: true,
+		autoincrement: true,
+	},
+	countee : Sequelize.STRING,
+	count: Sequelize.INTEGER,
+});
+
+module.exports = { Players, OverwatchAccounts, Counter };
