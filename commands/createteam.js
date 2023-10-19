@@ -152,7 +152,7 @@ module.exports = {
 		if (interaction.options.getUser('manager')) {
 			const manager = interaction.options.getUser('manager');
 			await interaction.guild.members.fetch(manager.id).then(member => {
-				member.roles.add(roleIds[0]);
+				member.roles.add(roleIds[1]);
 				const embed = new EmbedBuilder().setTitle(`Congratulations on Becoming the Manager of ${teamName}!`)
 					.setDescription('Welcome to your new role! I am a bot, so if you at any time have any questions, DM <@116289585570512898>. We\'re going to run through everything real quick.')
 					.setColor(color)
