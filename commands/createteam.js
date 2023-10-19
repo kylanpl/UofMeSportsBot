@@ -102,9 +102,8 @@ async function createChannels(interaction) {
 	results.forEach((channel) => {
 		subchannels.push(channel);
 	});
-	console.log(subchannels);
+
 	subchannels.forEach((channel) => {
-		console.log(channel.id);
 		channelIds.push(channel.id);
 	});
 }
