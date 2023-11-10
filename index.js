@@ -39,11 +39,11 @@ client.on(Events.MessageCreate, async message => {
 	if (message.author.bot) return;
 	// Check last two characters of message
 	const lastTwo = message.content.slice(-2);
-	const increase = lastTwo === '++';
+	const hasMentions = message.mentions.everyone || message.mentions.users.size > 0 || message.mentions.roles.size > 0;
 	// const rest of string
-	const string = message.content.slice(0, -2);
-
-	if (lastTwo === '++' || lastTwo === '--') {
+	if ((lastTwo === '++' || lastTwo === '--') && !hasMentions) {
+		const increase = lastTwo === '++';
+		const string = message.content.slice(0, -2);
 		const string_exists = await Counter.findOne({ where: { countee: string } }) ?? null;
 		let temp_counter = string_exists?.count ?? 1;
 		if (string_exists) {
@@ -77,6 +77,7 @@ client.on(Events.MessageCreate, async message => {
 			temp_counter = -1;
 		}
 		// Send message to channel
+		// Make sure message does not contain a ping
 		message.reply(`${string} == ${temp_counter}`);
 	}
 
