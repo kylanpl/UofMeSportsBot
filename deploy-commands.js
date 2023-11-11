@@ -2,7 +2,7 @@ const { REST, Routes } = require('discord.js');
 require('dotenv').config();
 
 const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID_PROD;
+const guildId = process.env.GUILD_ID;
 const token = process.env.TOKEN;
 const fs = require('node:fs');
 const path = require('node:path');
@@ -36,6 +36,7 @@ const rest = new REST().setToken(token);
 			Routes.applicationGuildCommands(clientId, guildId),
 			{ body: commands },
 		);
+
 
 		console.log(`Successfully reloaded ${data.length} application (/) commands.`);
 	}
