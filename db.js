@@ -34,6 +34,7 @@ const Counter = sequelize.define('Counter', {
 	},
 	countee : Sequelize.STRING,
 	count: Sequelize.INTEGER,
+	guild: Sequelize.INTEGER,
 });
 
 module.exports = { Players, OverwatchAccounts, Counter };
