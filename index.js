@@ -44,7 +44,7 @@ client.on(Events.MessageCreate, async message => {
 	if ((lastTwo === '++' || lastTwo === '--') && !hasMentions) {
 		const increase = lastTwo === '++';
 		const string = message.content.slice(0, -2);
-		const string_exists = await Counter.findOne({ where: { countee: string } }) ?? null;
+		const string_exists = await Counter.findOne({ where: { countee: string, guild: message.guild.id } }) ?? null;
 		let temp_counter = string_exists?.count ?? 1;
 		if (string_exists) {
 			if (lastTwo == '++') {
@@ -64,6 +64,7 @@ client.on(Events.MessageCreate, async message => {
 			const CounterString = await Counter.create({
 				countee: string,
 				count: 1,
+				guild: message.guild.id,
 			});
 			temp_counter = 1;
 			console.log(`Created counter for ${string}`);
@@ -73,6 +74,7 @@ client.on(Events.MessageCreate, async message => {
 			const CounterString = await Counter.create({
 				countee: string,
 				count: -1,
+				guild: message.guild.id,
 			});
 			temp_counter = -1;
 		}

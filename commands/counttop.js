@@ -9,7 +9,7 @@ module.exports = {
 
 
 		Counter.sync();
-		const allCounters = await Counter.findAll({ order: [['count', 'DESC']] });
+		const allCounters = await Counter.findAll({ order: [['count', 'DESC']], where: { guild: interaction.guild.id } });
 
 		for (const counter of allCounters) {
 			// Rank them
