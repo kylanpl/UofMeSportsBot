@@ -9,6 +9,6 @@ module.exports = {
 		Counter.sync();
 		const topCounters = await Counter.findAll({ order: [['count', 'DESC']], limit: 10 });
 		const topCounterStrings = topCounters.map(counter => `${counter.countee}: ${counter.count}`);
-		await interaction.reply(topCounterStrings.join('\n'));
+		await interaction.reply(`# Top Counters\n${topCounterStrings.join('\n')}`);
 	},
 };
