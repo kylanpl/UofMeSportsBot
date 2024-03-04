@@ -1,4 +1,4 @@
-const Sequelize = require('sequelize');
+import { Sequelize } from 'sequelize';
 
 const sequelize = new Sequelize('database', 'user', 'password', {
 	host: 'localhost',
@@ -37,4 +37,4 @@ const Counter = sequelize.define('Counter', {
 	guild: Sequelize.INTEGER,
 });
 
-module.exports = { Players, OverwatchAccounts, Counter };
+export { Players, OverwatchAccounts, Counter };

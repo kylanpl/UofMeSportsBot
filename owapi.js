@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-async function getSummary(battletag) {
+export async function getSummary(battletag) {
 
 	try {
 		const response = await fetch(`https://overfast-api.tekrop.fr/players/${battletag}/summary`);
@@ -13,7 +13,7 @@ async function getSummary(battletag) {
 
 }
 
-async function getFullStats(battletag) {
+export async function getFullStats(battletag) {
 	try {
 		const response = await fetch(`https://overfast-api.tekrop.fr/players/${battletag}`);
 		const data = await response.json();
@@ -24,8 +24,3 @@ async function getFullStats(battletag) {
 	}
 }
 
-
-module.exports = {
-	getSummary,
-	getFullStats,
-};
